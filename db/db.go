@@ -44,8 +44,8 @@ func (d *DB) Ping(ctx context.Context) error {
 }
 
 func getConnectionString() string {
-
-	return "postgresql://postgres.ayflwtkdrsitdqkodsan:BZhFhWPjcJxeHYIt@ayflwtkdrsitdqkodsan.pooler.supabase.com:6543/postgres"
+	return "postgresql://postgres.ayflwtkdrsitdqkodsan:BZhFhWPjcJxeHYIt@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+	//return "postgresql://postgres.ayflwtkdrsitdqkodsan:BZhFhWPjcJxeHYIt@ayflwtkdrsitdqkodsan.pooler.supabase.com:6543/postgres"
 	//return `postgresql://postgres.ayflwtkdrsitdqkodsan:CJ5V6FgxnmQi5PZy@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
 	//return "postgresql://postgres.ayflwtkdrsitdqkodsan:CJ5V6FgxnmQi5PZy@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 	//return "postgresql://postgres.ajrbwkcuthywddfihrmflo:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
