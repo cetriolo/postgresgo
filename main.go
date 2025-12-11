@@ -13,16 +13,9 @@ import (
 	"time"
 )
 
-type User struct {
-	ID        int
-	Username  string
-	Email     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 type App struct {
-	db *db.DB
+	db       *db.DB
+	userRepo *db.UserRepository
 }
 
 type HealthCheckResponse struct {
@@ -48,7 +41,11 @@ func main() {
 
 	fmt.Println("Migrations completed successfully!")
 
-	app := &App{db: database}
+	userRepo := db.NewUserRepository(database)
+	app := &App{
+		db:       database,
+		userRepo: userRepo,
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", app.healthCheckHandler)
@@ -110,33 +107,64 @@ func (a *App) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) usersHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.getUsersHandler(w, r)
+	case http.MethodPost:
+		a.createUserHandler(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (a *App) getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	rows, err := a.db.Pool.Query(ctx, "SELECT id, username, email, created_at, updated_at FROM users ORDER BY id")
+	users, err := a.userRepo.GetAll(ctx)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("query failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt); err != nil {
-			http.Error(w, fmt.Sprintf("scan failed: %v", err), http.StatusInternalServerError)
-			return
-		}
-		users = append(users, user)
-	}
-
-	if err := rows.Err(); err != nil {
-		http.Error(w, fmt.Sprintf("rows error: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to get users: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+type CreateUserRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+
+func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	var req CreateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.Username == "" {
+		http.Error(w, "username is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" {
+		http.Error(w, "email is required", http.StatusBadRequest)
+		return
+	}
+
+	user, err := a.userRepo.Add(ctx, req.Username, req.Email)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to create user: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(user)
 }
 
 func getEnv(key, defaultValue string) string {
