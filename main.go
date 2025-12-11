@@ -49,6 +49,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", app.healthCheckHandler)
+	mux.HandleFunc("/users/{id}", app.getUserHandler)
 	mux.HandleFunc("/users", app.usersHandler)
 
 	port := getEnv("PORT", "8080")
@@ -129,6 +130,41 @@ func (a *App) getUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (a *App) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	idStr := r.PathValue("id")
+	if idStr == "" {
+		http.Error(w, "user id is required", http.StatusBadRequest)
+		return
+	}
+
+	var id int
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := a.userRepo.GetByID(ctx, id)
+	if err != nil {
+		if err.Error() == "no rows in result set" || err.Error() == "failed to get user: no rows in result set" {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("failed to get user: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }
 
 type CreateUserRequest struct {
