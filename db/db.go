@@ -44,20 +44,27 @@ func (d *DB) Ping(ctx context.Context) error {
 }
 
 func getConnectionString() string {
-	if connStr := os.Getenv("DATABASE_URL"); connStr != "" {
-		return connStr
-	}
 
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "postgres")
-	password := getEnv("DB_PASSWORD", "postgres")
-	dbname := getEnv("DB_NAME", "postgres")
-	sslmode := getEnv("DB_SSLMODE", "disable")
-
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		host, port, user, password, dbname, sslmode)
+	return "postgresql://postgres.ayflwtkdrsitdqkodsan:BZhFhWPjcJxeHYIt@db.ayflwtkdrsitdqkodsan.supabase.co:6543/postgres"
+	//return `postgresql://postgres.ayflwtkdrsitdqkodsan:CJ5V6FgxnmQi5PZy@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
+	//return "postgresql://postgres.ayflwtkdrsitdqkodsan:CJ5V6FgxnmQi5PZy@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+	//return "postgresql://postgres.ajrbwkcuthywddfihrmflo:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
 }
+
+//	if connStr := os.Getenv("DATABASE_URL"); connStr != "" {
+//		return connStr
+//	}
+//
+//	host := getEnv("DB_HOST", "localhost")
+//	port := getEnv("DB_PORT", "5432")
+//	user := getEnv("DB_USER", "postgres")
+//	password := getEnv("DB_PASSWORD", "postgres")
+//	dbname := getEnv("DB_NAME", "postgres")
+//	sslmode := getEnv("DB_SSLMODE", "disable")
+//
+//	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+//		host, port, user, password, dbname, sslmode)
+//}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
